@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package my.package;
+
+import "google/protobuf/timestamp.proto";
+import "buf/validate/validate.proto";
+
+message Transaction {
+  uint64 id = 1 [(buf.validate.field).uint64.gt = 999];
+  google.protobuf.Timestamp purchase_date = 2;
+  google.protobuf.Timestamp delivery_date = 3;
+
+  string price = 4 [(buf.validate.field).cel = {
+    id: "transaction.price",
+    message: "price must be positive and include a valid currency symbol ($ or £)",
+    expression: "(this.startswith('$') or this.startswith('£')) and float(this[1:]) > 0"
+  }];
+
+  option (buf.validate.message).cel = {
+    id: "transaction.delivery_date",
+    message: "delivery date must be after purchase date",
+    expression: "this.delivery_date > this.purchase_date"
+  };
+}
