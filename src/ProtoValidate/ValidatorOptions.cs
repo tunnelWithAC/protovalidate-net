@@ -22,5 +22,5 @@ public class ValidatorOptions
 
     public bool DisableLazy { get; set; }
     public IList<FileDescriptor>? FileDescriptors { get; set; }
-    public bool PreLoadDescriptors { get; set; }
+    public bool PreLoadDescriptors { get; set; } = false;
 }

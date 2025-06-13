@@ -61,6 +61,19 @@ public class Validator : IValidator
         return evaluator.Evaluate(new MessageValue(message), failFast);
     }
 
+    // public List<string> ValidateMessage(Google.Protobuf.IMessage message, bool failFast = _failFast)
+    // {
+    //     // validate the message
+    //     var violations = _validator.Validate(message, failFast);
+
+    //     var validationErrors = new List<string>();
+    //     foreach(var violation in violations.Violations)
+    //     {
+    //         validationErrors.Add($"{violation.FieldPath} {violation.Message}");
+    //     }
+    //     return validationErrors;
+    // }
+
     private void Initialize()
     {
         var fileDescriptorList = Options.FileDescriptors ?? new List<FileDescriptor>();
