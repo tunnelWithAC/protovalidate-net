@@ -15,6 +15,8 @@
 using Google.Protobuf;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
+using My.Package;
+using Google.Protobuf.WellKnownTypes;
 
 namespace ProtoValidate.Tests;
 
@@ -98,6 +100,69 @@ public class ValidatorTests
 
         // Assert
         Assert.That(validator, Is.Not.Null);
+    }
+
+    private static Validator CreateTransactionValidator()
+    {
+        var options = new ValidatorOptions
+        {
+            FileDescriptors = new List<Google.Protobuf.Reflection.FileDescriptor> { TransactionReflection.Descriptor },
+            PreLoadDescriptors = true
+        };
+        return new Validator(options);
+    }
+
+    private static Transaction CreateValidTransaction()
+    {
+        return new Transaction
+        {
+            Id = 1000,
+            PurchaseDate = Timestamp.FromDateTime(DateTime.UtcNow),
+            DeliveryDate = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(1)),
+            Price = "$123.45"
+        };
+    }
+
+    [Test]
+    public void Validate_ValidTransaction_PassesValidation()
+    {
+        var validator = CreateTransactionValidator();
+        var valid = CreateValidTransaction();
+        var result = validator.Validate(valid, failFast: false);
+        Assert.That(result.IsSuccess, Is.True, "Expected valid transaction to pass validation");
+    }
+
+    [Test]
+    public void Validate_TransactionWithInvalidId_FailsValidation()
+    {
+        var validator = CreateTransactionValidator();
+        var invalid = CreateValidTransaction();
+        invalid.Id = 1;
+        var result = validator.Validate(invalid, failFast: false);
+        Assert.That(result.IsSuccess, Is.False, "Expected transaction with id too low to fail");
+        Assert.That(result.Violations.Any(v => v.ConstraintId.Contains("uint64.gt")), Is.True);
+    }
+
+    [Test]
+    public void Validate_TransactionWithInvalidPrice_FailsValidation()
+    {
+        var validator = CreateTransactionValidator();
+        var invalid = CreateValidTransaction();
+        invalid.Price = "123.45";
+        var result = validator.Validate(invalid, failFast: false);
+        Assert.That(result.IsSuccess, Is.False, "Expected transaction with invalid price to fail");
+        Assert.That(result.Violations.Any(v => v.ConstraintId.Contains("transaction.price")), Is.True);
+    }
+
+    [Test]
+    public void Validate_TransactionWithInvalidDeliveryDate_FailsValidation()
+    {
+        var validator = CreateTransactionValidator();
+        var invalid = CreateValidTransaction();
+        invalid.DeliveryDate = Timestamp.FromDateTime(DateTime.UtcNow.AddDays(-1));
+        var result = validator.Validate(invalid, failFast: false);
+        Assert.That(result.IsSuccess, Is.False, "Expected transaction with delivery date before purchase date to fail");
+        Assert.That(result.Violations.Any(v => v.ConstraintId.Contains("transaction.delivery_date")), Is.True);
     }
 }
 
